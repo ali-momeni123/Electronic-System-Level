@@ -1,0 +1,29 @@
+[
+  {
+    "class":"firrtl.stage.FirrtlFileAnnotation",
+    "file":"test_run_dir\\ALUTester1811624994\\ALU.lo.fir"
+  },
+  {
+    "class":"firrtl.transforms.CombinationalPath",
+    "sink":"~ALU|ALU>io_result",
+    "sources":[
+      "~ALU|ALU>io_a",
+      "~ALU|ALU>io_aluOp",
+      "~ALU|ALU>io_b"
+    ]
+  },
+  {
+    "class":"logger.LogLevelAnnotation",
+    "globalLogLevel":{
+      
+    }
+  },
+  {
+    "class":"firrtl.EmitCircuitAnnotation",
+    "emitter":"firrtl.LowFirrtlEmitter"
+  },
+  {
+    "class":"firrtl.transforms.BlackBoxTargetDirAnno",
+    "targetDir":"test_run_dir/ALUTester1811624994"
+  }
+]
