@@ -1,0 +1,410 @@
+## HLS DC synthesis script
+
+puts "-- Note: Design Compiler Started"
+
+set enable_page_mode "false"
+
+if { [file isdirectory "gate_synthesis_dc"] } {
+  puts "Note: Removing old directory gate_synthesis_dc"
+  file delete -force -- "gate_synthesis_dc"
+}
+puts "Note: Creating directory gate_synthesis_dc"
+file mkdir "gate_synthesis_dc"
+cd "gate_synthesis_dc"
+
+set hdlin_while_loop_iterations 1000
+set PROJECT_HOME C:/Users/TA/Desktop
+
+## Initialize DC-HLS variables
+set hls_status 0
+
+proc run_cmd { cmd errstr } {
+  upvar hls_status hls_status
+  puts $cmd
+  set retVal {}
+  if { !$hls_status } {
+    if { [catch { set retVal [uplevel 1 [list eval $cmd] ] } ] } {
+      puts "Error: Unable to $errstr."
+      set hls_status 1
+    }
+  } else {
+    puts "Error: $errstr skipped due to previous errors."
+  }
+  set retVal
+}
+## Configure technology settings
+set target_library sample_065nm.db
+set link_library sample_065nm.db
+set synthetic_library {dw_foundation.sldb standard.sldb}
+
+## Configure design license usage
+set synlib_dont_get_license {}
+set synlib_wait_for_design_license DesignWare
+
+
+## Define library WORK
+if { [file isdirectory "work"] } {
+  file delete -force -- "work"
+}
+puts "Note: Creating directory work"
+file mkdir "work"
+define_design_lib "WORK" -path "work"
+puts "Note: Mapped design library WORK => work"
+
+## Analyze rtl_mgc_ioport.v 
+run_cmd {analyze -format "verilog" $PROJECT_HOME/Catapult_5/matrix_mult.v14/rtl_mgc_ioport.v} {analyze file 'rtl_mgc_ioport.v'}
+
+## Analyze rtl_mgc_ioport_v2001.v 
+run_cmd {analyze -format "verilog" $PROJECT_HOME/Catapult_5/matrix_mult.v14/rtl_mgc_ioport_v2001.v} {analyze file 'rtl_mgc_ioport_v2001.v'}
+
+## Analyze rtl.v 
+run_cmd {analyze -format "verilog" $PROJECT_HOME/Catapult_5/matrix_mult.v14/rtl.v} {analyze file 'rtl.v'}
+
+## Elaborate design matrix_mult 
+run_cmd {elaborate "matrix_mult"} {elaborate matrix_mult {}}
+
+
+##  Synthesize toplevel design
+set_operating_conditions tt_1p0v_25c
+set_wire_load_model -name tsmc65_wl10
+
+## Include timing constraint file
+source C:/Users/TA/Desktop/Catapult_5/matrix_mult.v14/rtl.v.dc_timing
+
+puts "[clock format [clock seconds] -format {%a %b %d %H:%M:%S %Z %Y}]"
+
+set_load 0.00301 [all_outputs]
+## driver/slew constraints on inputs
+set data_inputs [remove_from_collection [all_inputs] {clk rst}]
+if { [llength $data_inputs ] > 0 } {
+  set_driving_cell -library scadv10_cln65gp_rvt_tt_1p0v_25c -lib_cell BUFHX0P7MA10TR -pin Y $data_inputs
+}
+set_max_delay 5.16609 -to [all_outputs]
+
+puts "-- Starting synthesis for design 'matrix_mult'"
+uniquify
+if { [lindex [split $compatibility_version "-"] 1] < "2007.03" } {
+  compile -map_effort medium -boundary_optimization  
+} else {
+  compile -map_effort medium -boundary_optimization    
+}
+
+set high_fanout_net_threshold 0
+puts "-- Requested 3 fractional digits for design 'matrix_mult' timing"
+puts "-- Requested 3 fractional digits for design 'matrix_mult' capacitance"
+puts "-- Tool output delay factor to nS: 1.0"
+puts "-- Synthesis area report for design 'matrix_mult'"
+report_area
+puts "-- END Synthesis area report for design 'matrix_mult'"
+
+   if { [llength [get_clocks -quiet clk] ] > 0 && [llength [all_registers -clock {clk}] ] > 0 } {
+      puts "-- Synthesis input_to_register:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '0' 'INOUT' CLOCK 'clk'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to [all_registers -data_pins -clock {clk}] 
+      puts "-- END Synthesis input_to_register:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '0' 'INOUT' CLOCK 'clk'"
+   }
+
+   if { [llength [get_clocks -quiet clk] ] > 0 && [llength [all_registers -clock {clk}] ] > 0 } {
+      puts "-- Synthesis input_to_register:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '0' 'INOUT' CLOCK 'clk'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to [all_registers -data_pins -clock {clk}] 
+      puts "-- END Synthesis input_to_register:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '0' 'INOUT' CLOCK 'clk'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix1_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis input_to_register:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to [all_registers -data_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis input_to_register:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix1_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis input_to_register:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to [all_registers -data_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis input_to_register:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix2_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis input_to_register:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to [all_registers -data_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis input_to_register:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix2_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis input_to_register:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to [all_registers -data_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis input_to_register:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet clk] ] > 0 && [llength [get_clocks -quiet clk] ] > 0 && [llength [all_registers -clock {clk}] ] > 0 && [llength [all_registers -clock {clk}] ] > 0 } {
+      puts "-- Synthesis register_to_register:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '0' 'INOUT' CLOCK 'clk'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to [all_registers -data_pins -clock {clk}] 
+      puts "-- END Synthesis register_to_register:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '0' 'INOUT' CLOCK 'clk'"
+   }
+
+   if { [llength [get_clocks -quiet clk] ] > 0 && [llength [get_clocks -quiet input_matrix1_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {clk}] ] > 0 && [llength [all_registers -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis register_to_register:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to [all_registers -data_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis register_to_register:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet clk] ] > 0 && [llength [get_clocks -quiet input_matrix2_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {clk}] ] > 0 && [llength [all_registers -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis register_to_register:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to [all_registers -data_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis register_to_register:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix1_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [get_clocks -quiet clk] ] > 0 && [llength [all_registers -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] ] > 0 && [llength [all_registers -clock {clk}] ] > 0 } {
+      puts "-- Synthesis register_to_register:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '0' 'INOUT' CLOCK 'clk'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to [all_registers -data_pins -clock {clk}] 
+      puts "-- END Synthesis register_to_register:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '0' 'INOUT' CLOCK 'clk'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix1_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [get_clocks -quiet input_matrix1_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] ] > 0 && [llength [all_registers -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis register_to_register:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to [all_registers -data_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis register_to_register:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix1_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [get_clocks -quiet input_matrix2_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] ] > 0 && [llength [all_registers -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis register_to_register:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to [all_registers -data_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis register_to_register:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix2_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [get_clocks -quiet clk] ] > 0 && [llength [all_registers -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] ] > 0 && [llength [all_registers -clock {clk}] ] > 0 } {
+      puts "-- Synthesis register_to_register:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '0' 'INOUT' CLOCK 'clk'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to [all_registers -data_pins -clock {clk}] 
+      puts "-- END Synthesis register_to_register:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '0' 'INOUT' CLOCK 'clk'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix2_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [get_clocks -quiet input_matrix1_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] ] > 0 && [llength [all_registers -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis register_to_register:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to [all_registers -data_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis register_to_register:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix2_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [get_clocks -quiet input_matrix2_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] ] > 0 && [llength [all_registers -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis register_to_register:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to [all_registers -data_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] 
+      puts "-- END Synthesis register_to_register:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out'"
+   }
+
+   if { [llength [get_clocks -quiet clk] ] > 0 && [llength [all_registers -clock {clk}] ] > 0 } {
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix1_rsc_REGISTER_FILE_data_in
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix1_rsc_REGISTER_FILE_addr_rd
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix1_rsc_REGISTER_FILE_addr_wr
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix1_rsc_REGISTER_FILE_re
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix1_rsc_REGISTER_FILE_we
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix2_rsc_REGISTER_FILE_data_in
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix2_rsc_REGISTER_FILE_addr_rd
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix2_rsc_REGISTER_FILE_addr_wr
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix2_rsc_REGISTER_FILE_re
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to input_matrix2_rsc_REGISTER_FILE_we
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '3' 'OUT' port 'output_rsc_z'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to output_rsc_z
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '3' 'OUT' port 'output_rsc_z'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '4' 'OUT' port 'output_valid_rsc_z'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to output_valid_rsc_z
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '4' 'OUT' port 'output_valid_rsc_z'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '5' 'OUT' port 'addr_rsc_z'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {clk}] -to addr_rsc_z
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '0' 'INOUT' CLOCK 'clk' '5' 'OUT' port 'addr_rsc_z'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix1_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_data_in
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_addr_rd
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_addr_wr
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_re
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_we
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_data_in
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_addr_rd
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_addr_wr
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_re
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_we
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '3' 'OUT' port 'output_rsc_z'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to output_rsc_z
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '3' 'OUT' port 'output_rsc_z'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '4' 'OUT' port 'output_valid_rsc_z'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to output_valid_rsc_z
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '4' 'OUT' port 'output_valid_rsc_z'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '5' 'OUT' port 'addr_rsc_z'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix1_rsc_REGISTER_FILE_data_out}] -to addr_rsc_z
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '1' 'IN' CLOCK 'input_matrix1_rsc_REGISTER_FILE_data_out' '5' 'OUT' port 'addr_rsc_z'"
+   }
+
+   if { [llength [get_clocks -quiet input_matrix2_rsc_REGISTER_FILE_data_out] ] > 0 && [llength [all_registers -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] ] > 0 } {
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_data_in
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_addr_rd
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_addr_wr
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_re
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix1_rsc_REGISTER_FILE_we
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_data_in
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_addr_rd
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_addr_wr
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_re
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to input_matrix2_rsc_REGISTER_FILE_we
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '3' 'OUT' port 'output_rsc_z'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to output_rsc_z
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '3' 'OUT' port 'output_rsc_z'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '4' 'OUT' port 'output_valid_rsc_z'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to output_valid_rsc_z
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '4' 'OUT' port 'output_valid_rsc_z'"
+      puts "-- Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '5' 'OUT' port 'addr_rsc_z'"
+      report_timing -nosplit -significant_digits 3 -capacitance -from [all_registers -clock_pins -clock {input_matrix2_rsc_REGISTER_FILE_data_out}] -to addr_rsc_z
+      puts "-- END Synthesis register_to_output:timing report for design 'matrix_mult' '2' 'IN' CLOCK 'input_matrix2_rsc_REGISTER_FILE_data_out' '5' 'OUT' port 'addr_rsc_z'"
+   }
+
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_data_in
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_addr_rd
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_addr_wr
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_re
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_we
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_data_in
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_addr_rd
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_addr_wr
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_re
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_we
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '3' 'OUT' port 'output_rsc_z'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to output_rsc_z
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '3' 'OUT' port 'output_rsc_z'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '4' 'OUT' port 'output_valid_rsc_z'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to output_valid_rsc_z
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '4' 'OUT' port 'output_valid_rsc_z'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '5' 'OUT' port 'addr_rsc_z'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix1_rsc_REGISTER_FILE_data_out -to addr_rsc_z
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_out' '5' 'OUT' port 'addr_rsc_z'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_data_in
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_data_in'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_addr_rd
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_rd'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_addr_wr
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_addr_wr'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_re
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_re'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix1_rsc_REGISTER_FILE_we
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '1' 'IN' port 'input_matrix1_rsc_REGISTER_FILE_we'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_data_in
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_in'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_addr_rd
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_rd'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_addr_wr
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_addr_wr'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_re
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_re'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to input_matrix2_rsc_REGISTER_FILE_we
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_we'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '3' 'OUT' port 'output_rsc_z'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to output_rsc_z
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '3' 'OUT' port 'output_rsc_z'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '4' 'OUT' port 'output_valid_rsc_z'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to output_valid_rsc_z
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '4' 'OUT' port 'output_valid_rsc_z'"
+   puts "-- Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '5' 'OUT' port 'addr_rsc_z'"
+   report_timing -nosplit -significant_digits 3 -capacitance -from input_matrix2_rsc_REGISTER_FILE_data_out -to addr_rsc_z
+   puts "-- END Synthesis input_to_output:timing report for design 'matrix_mult' '2' 'IN' port 'input_matrix2_rsc_REGISTER_FILE_data_out' '5' 'OUT' port 'addr_rsc_z'"
+if {$hls_status} {
+  puts "Warning: Check transcript for errors hls_status=$hls_status"
+}
+puts "[clock format [clock seconds] -format {%a %b %d %H:%M:%S %Z %Y}]"
+set dc_bin_fmt ddc
+if { [lindex [split $compatibility_version "-"] 1] < "2006.06" } {
+    set dc_bin_fmt db
+}
+write -hierarchy -format $dc_bin_fmt -output gate.dc.v.$dc_bin_fmt
+change_names -hierarchy -rules vhdl
+write -hierarchy -format vhdl -output C:/Users/TA/Desktop/Catapult_5/matrix_mult.v14/gate.dc.v.vhdl
+write_sdc C:/Users/TA/Desktop/Catapult_5/matrix_mult.v14/gate.dc.v.sdc
+write_sdf C:/Users/TA/Desktop/Catapult_5/matrix_mult.v14/gate.dc.v.sdf
+cd ..
+
+puts "-- Synthesis finished for design 'matrix_mult'"
+

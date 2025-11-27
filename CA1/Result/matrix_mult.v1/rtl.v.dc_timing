@@ -1,0 +1,17 @@
+set timing_input_port_default_clock true
+create_clock -name clk -period 100.0 -waveform { 0.0 50.0 } clk
+set_clock_uncertainty 0.0 clk
+
+## IO TIMING CONSTRAINTS
+set_output_delay 0.010000 input_matrix1_rsc_REGISTER_FILE_data_in -clock clk
+set_output_delay 0.010000 input_matrix1_rsc_REGISTER_FILE_addr_rd -clock clk
+set_output_delay 0.010000 input_matrix1_rsc_REGISTER_FILE_addr_wr -clock clk
+set_output_delay 0.010000 input_matrix1_rsc_REGISTER_FILE_re -clock clk
+set_output_delay 0.010000 input_matrix1_rsc_REGISTER_FILE_we -clock clk
+set_input_delay 1.000000 input_matrix1_rsc_REGISTER_FILE_data_out -clock clk
+set_output_delay 0.010000 input_matrix2_rsc_REGISTER_FILE_data_in -clock clk
+set_output_delay 0.010000 input_matrix2_rsc_REGISTER_FILE_addr_rd -clock clk
+set_output_delay 0.010000 input_matrix2_rsc_REGISTER_FILE_addr_wr -clock clk
+set_output_delay 0.010000 input_matrix2_rsc_REGISTER_FILE_re -clock clk
+set_output_delay 0.010000 input_matrix2_rsc_REGISTER_FILE_we -clock clk
+set_input_delay 1.000000 input_matrix2_rsc_REGISTER_FILE_data_out -clock clk

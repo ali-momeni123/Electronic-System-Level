@@ -1,0 +1,11 @@
+directive set /matrix_mult/matrix_mult:core/core/loop2:j#1.sva REGISTER_NAME reg#1
+directive set /matrix_mult/matrix_mult:core/core/loop3:acc#12.cse.sva REGISTER_NAME reg#1
+directive set /matrix_mult/matrix_mult:core/core/loop3-10:mul#2.itm REGISTER_NAME reg#2
+directive set /matrix_mult/matrix_mult:core/core/loop3-12:mul#2.itm REGISTER_NAME reg#2
+directive set /matrix_mult/matrix_mult:core/core/loop3-2:mul#2.itm REGISTER_NAME reg#2
+directive set /matrix_mult/matrix_mult:core/core/loop3-4:mul#2.itm REGISTER_NAME reg#2
+directive set /matrix_mult/matrix_mult:core/core/loop3-6:mul#2.itm REGISTER_NAME reg#2
+directive set /matrix_mult/matrix_mult:core/core/loop3-8:mul#2.itm REGISTER_NAME reg#2
+directive set /matrix_mult/matrix_mult:core/core/loop3:acc#23.itm REGISTER_NAME loop3.reg
+directive set /matrix_mult/matrix_mult:core/core/loop3:acc#25.itm REGISTER_NAME loop3.reg
+directive set /matrix_mult/matrix_mult:core/core/loop3:acc#31.itm REGISTER_NAME loop3.reg
