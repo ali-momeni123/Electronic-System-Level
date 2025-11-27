@@ -1,0 +1,16 @@
+onbreak resume
+onerror resume
+vsim -voptargs=+acc work.Programmable_FIR_via_Registers_tb
+
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/clk
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/reset
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/clk_enable
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/coeffs_in
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/write_address
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/write_enable
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/write_done
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/filter_in
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/ce_out
+add wave sim:/Programmable_FIR_via_Registers_tb/u_Programmable_FIR_via_Registers/filter_out
+add wave sim:/Programmable_FIR_via_Registers_tb/filter_out_ref
+run -all

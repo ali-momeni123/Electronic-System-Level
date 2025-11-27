@@ -1,0 +1,34 @@
+function RTW_SidParentMap() {
+    this.sidParentMap = new Array();
+    this.sidParentMap["FIRoldVersion:11"] = "FIRoldVersion:3";
+    this.sidParentMap["FIRoldVersion:12"] = "FIRoldVersion:3";
+    this.sidParentMap["FIRoldVersion:13"] = "FIRoldVersion:3";
+    this.sidParentMap["FIRoldVersion:14"] = "FIRoldVersion:3";
+    this.sidParentMap["FIRoldVersion:8"] = "FIRoldVersion:3";
+    this.sidParentMap["FIRoldVersion:9"] = "FIRoldVersion:3";
+    this.sidParentMap["FIRoldVersion:172"] = "FIRoldVersion:3";
+    this.sidParentMap["FIRoldVersion:240"] = "FIRoldVersion:3";
+    this.sidParentMap["FIRoldVersion:113"] = "FIRoldVersion:3";
+    this.sidParentMap["FIRoldVersion:173"] = "FIRoldVersion:172";
+    this.sidParentMap["FIRoldVersion:175"] = "FIRoldVersion:172";
+    this.sidParentMap["FIRoldVersion:176"] = "FIRoldVersion:172";
+    this.sidParentMap["FIRoldVersion:153"] = "FIRoldVersion:172";
+    this.sidParentMap["FIRoldVersion:244"] = "FIRoldVersion:172";
+    this.sidParentMap["FIRoldVersion:174"] = "FIRoldVersion:172";
+    this.sidParentMap["FIRoldVersion:240:1"] = "FIRoldVersion:240";
+    this.sidParentMap["FIRoldVersion:240:2"] = "FIRoldVersion:240";
+    this.sidParentMap["FIRoldVersion:240:3"] = "FIRoldVersion:240";
+    this.sidParentMap["FIRoldVersion:240:4"] = "FIRoldVersion:240";
+    this.sidParentMap["FIRoldVersion:240:5"] = "FIRoldVersion:240";
+    this.sidParentMap["FIRoldVersion:240:9"] = "FIRoldVersion:240";
+    this.sidParentMap["FIRoldVersion:240:6"] = "FIRoldVersion:240";
+    this.sidParentMap["FIRoldVersion:244:1"] = "FIRoldVersion:244";
+    this.sidParentMap["FIRoldVersion:244:2"] = "FIRoldVersion:244";
+    this.sidParentMap["FIRoldVersion:244:3"] = "FIRoldVersion:244";
+    this.sidParentMap["FIRoldVersion:244:4"] = "FIRoldVersion:244";
+    this.sidParentMap["FIRoldVersion:244:5"] = "FIRoldVersion:244";
+    this.sidParentMap["FIRoldVersion:244:9"] = "FIRoldVersion:244";
+    this.sidParentMap["FIRoldVersion:244:6"] = "FIRoldVersion:244";
+    this.getParentSid = function(sid) { return this.sidParentMap[sid];}
+}
+    RTW_SidParentMap.instance = new RTW_SidParentMap();
